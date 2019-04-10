@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><GridWorldProperty>
+	<showGUI>1</showGUI>
+	<sleepTime>200</sleepTime>
+	<loadFilePath/>
+	<lastFilePath>/home/tokicm/kdevelop/Simulation/trunk/bin/5x5-simu.feedback</lastFilePath>
+	<activeColor b="255" g="51" r="51"/>
+</GridWorldProperty>

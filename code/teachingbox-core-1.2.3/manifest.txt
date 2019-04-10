@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Class-Path: bin:contrib/log4j/lib/log4j-1.2.15.jar:contrib/colt/doc/api/hep/aida/ref/doc-files/aidaref.jar:contrib/colt/lib/colt.jar:contrib/colt/lib/concurrent.jar:contrib/colt/src/hep/aida/ref/doc-files/aidaref.jar:contrib/junit/lib/junit-4.5.jar:contrib/jogl/lib/gluegen-rt.jar:contrib/jogl/lib/jogl.jar
+
