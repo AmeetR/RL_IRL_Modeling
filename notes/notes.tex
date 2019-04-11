@@ -66,73 +66,113 @@
 
 
 \begin{document}
+\title{Types of Reinforcement learning algorithm -- adaptive $\epsilon$ methods}
+\author{Ameet Rahane}
 \maketitle
 \date{}
-\section{Problem Set Up}
 
-\subsection{What do we have?}
-We start with data from Wholebrain. What this looks like for one mouse is a matrix in $\R^{2, n}$, where $n$ is the number of regions. This matrix consists of two vectors. They respectively stand for ipsilateral and contralateral hemispheres. Each vector contains cell counts for each region that we're looking at. Formally, we have
+
+\section{Preface}
+
+
+All of the following methods are ways I'm considering changing explore/exploit behavior within models in order to fit it to a biological agent. Something of notes is that most of these models are built to optimize for reward gained. This is not necessarily our goal. We want to find the best fit to a mouse. 
+
+
+\section{$\epsilon$ Greedy}
+
+With this method, the amount of exploration is globally controlled by a parameter $\epsilon\in [0,1]$ that denotes the probability of action selection. You choose actions based on the following equation: 
 \begin{equation}
-v \in \R^{2,n}
-\end{equation}
-\subsection{What do we want to find?}
-We want to find whether or not this mouse is male or female or if it has autism or not. Generalized, we want to find how the region counts are related to a given experimental condition. Since the outputs of these are yes or no questions, we can have it be an output. Thus, in essence, according to my understanding of this, at least, we want to find:
-
-\begin{equation}
-Tv = w, v \in \R^{2,n}, v \in \{0,1\}
-\end{equation}
-and 
-\begin{equation}
-T: \R^{2,m} \to \{0,1\}
-\end{equation}
-That is, we're trying to approximate a transformation from the space of relative region counts to a yes or no output. As in, a general binary classification problem. A strong question does still lie in whether we want to approximate this function directly or not, or rather, do we want to exactly build a classifier to do this (no harm in trying right?). 
-
-\section{Basic Exploratory Approaches}
-There are some approaches that data scientists generally take to look at the space of data given. We can start by simply building a correlation or covariance matrix. This will tell us the correlation between regions and probably, we could use it to find the correlations between hemispheres, as well. \\
-
-Alternatively (or in conjunction), we could take a look at the space of data by principal component analysis or singular value decomposition. Either of these methods manipulate orthogonality and eigenvalue decomposition in order to find where the most variation is. If we choose to do something like this, we could probably use it as a dimensionality reduction technique, as well as just telling us something about the data. We can also use canonical correlaiton analysis, but this is very similar and would serve the same purpose. 
-
-\section{More Advanced Approaches and Examples}
-We can use methods like LDA, random forests, or other binary classification techniques in order to directly find this classification map. The Cell paper did this as well. \\
-
-
-\subsection{Kim's (Cell) indirect, but more direct measure of which regions significantly matter}
-Let's call a region $Y$. The assumption they made is the following: 
-\begin{equation}
-Y\sim -Binom(\mu)
+a_t = \begin{cases}
+a_t^* & p = 1-\epsilon\\
+\text{random} & p = \epsilon
+\end{cases}
 \end{equation}
 
-$\mu$ here is the mean, but it's related to the experimental condition. Let's call this experimental condition $X$, in reality, this is the question we're trying to answer. 
-\begin{equation}
-\mathbb{E}[Y] = \alpha + \beta X, \alpha, \beta \in \R
-\end{equation}
-With this, we know that if $\beta$ is statistically significant, then the region being tested is important to the experimental condition. We can use iterative linear least squares squares error to find the values of $\alpha, \beta$ with some confidence interval. They also use the Benjami-Hochberg procedure to reduce error, will need to look this up. Perhaps, if there are multiple regions here, we can find the joint distribution. Also, maybe this distribution becomes normal if it is significant? Not entirely sure about this. 
+This basically stochastically chooses between two choices -- pure randomness or pure maximization (this is probably a bit idealistic and won't fit mice that well).
 
-
-\subsection{Using KNN clustering to approximate this function}
-
-Changing distance function to be what we want. 
-\section{Questions}
-I do still have a number of questions. In fact, I think this exercise has probably increased the number of questions that I have. \\
-
+\section{Softmax}
 \begin{itemize}
-  \item How much do we care about the relationship between ipsilateral and contralateral?\\
-
-  I know that we generally care about the projections, but do we need to look for the experimental relationship between the hemispheres? 
-  \item If so, is it important to first find its relationship or its joint distribution?  
-  \item Are we looking at a certain cell type? If so, what is this? 
-  \item What kind of labelling are we using? 
-  \item In the cell paper, why are they using a negative binomial distribution for the conditional distributions? I'm sure there is a reason, but it's not clear. 
+  \item Bias exploration towards promising actions
+  \item Softmax action selection methods grade action probabilities by estimated values
+  \item Most Common is Boltzmann Distribution: 
+  \begin{equation}
+\pi(a|s) = \dfrac{e^{\dfrac{Q(s,a)}{\tau}}}{e^{\sum_{a'\in A}\dfrac{Q(s,a')}{\tau}}}
+  \end{equation}
+  \item Here $\tau$ is a temperature constant. That is $\tau \to \infty$ implies that $P=\dfrac{1}{|A|}$ and $T\to 0$ implies that it's greedy
 \end{itemize}
 
+\section{Value Difference Based Exploration}
+This method extends $\epsilon-$greedy by adapting a state dependent exploration probability $\epsilon(s)$ instead of the classical hand tuning. The key idea is to consider the TD-error observed from value-function backups as a measure of the agent's uncertainty about the environment which directly affects the exploration probability. \\
 
-\section{Takeaway and starting point}
+Consider the RL framework where an agent interacts with a Markovian decision process. At each time step $t\in \N$, the agent is in a sertain state $s_t\in S$. After the selection of the action,$ a_t\in A(s_t)$, the agent receives a reward signal from the environment $r_{t+1} \in \R$ and is passed into a successor state. The decision which action $a$ is chosen in a certain state is characterized by a policy $\pi(s) = a$, which could also be stochastic $\pi(a|s) = p(a_t=a|s_t=s$. A policy that maximizes the cumulative reward is denoted as $\pi^*$. \\
 
-Overall, it seems like the Cell paper actually uses a similar technique to the one I suggested, although I found it a bit circular. They did quite a bit of analysis on the data itself, before trying to find a mapping. This is actually very useful, density maps are nice and we should try to do the same. \\
+A state action value denotes the expected cumulative reward $R_t$ for following $\pi$ by starting in state $s$ and selection action $a$: 
+\begin{equation}
+Q^\pi(s,a) = E_\pi \{R_t|s_t=s, a_t=a\} = E_\pi \{\sum_{k=0}^\infty \gamma^kr_{t+k+1}|s_t=s,a_t=a\}
+\end{equation} 
+$\gamma$ is a discount factor in $(0,1]$ for episodic learning tasks and $0<\gamma< 1$ for continuous learning tasks. \\
 
-I think a good starting point would be to start with PCA or a similar dimensionality reduction technique. Then, we can run LDA or some other linear classifier. After that, we can measure the effects pseudo-directly by the probabilistic model, they outlined. Although, I do still have a few questions about why they chose the distributions that they did. \\
+The basic idea of VDBE is to extend $\epsilon$ greedy by controlling a state dependent explorations probability $\epsilon(s)$ in dependence of the value function error instead of manual tuning. The following equatins adapt such desired behavior according to a softmax Boltzmann distribution of the value fuction estimates. This is performed after eadch learning step by: 
+\begin{equation}
+f(s,a,\sigma) = \dfrac{1-e^\frac{-|a\text{TD-Error}|}{\sigma}}{1+e^\frac{-|a\text{TD-Error}|}{\sigma}}
+\end{equation}
+Then, we update $\epsilon$ as follows: 
+\begin{equation}
+\epsilon_{t+1}(s) =\delta f(s_t, a_t, \sigma) + (1-\delta) \epsilon_t(s)
+\end{equation}
 
-Beyond that, we should do some region analytics too. That is, density maps and maybe trying to figure out the underlying probablity density distribution of the region data. \\
+$\sigma$  is a positive constant called inverse sensitivity and $\delta \in [0,1)$, a parameter determining the influence of the selection action on the exploration rate. An obvious setting for $\delta$ may be the inverse of the number of actions in the current state: $\delta = \dfrac{1}{|{\cal A}(s)|}$. Low inverse sensitivities cause full exploration even at small value changes. On the other hand, shigh inverse sensitivities cause a high level of exploration only at large value changes. In the limit, the exploration rate converges to zero as the Q-function converges, which results in pure greedy action selection. One drawback is the exploration actions are chosen uniformly distributed among all possible actions in the current state. 
 
-I'm not entirely sure how to incorporate ipsilateral vs. contralateral in this whole thing. Presumably, if we try to learn a map, we should see which matters more. Beyond that, the direct probabilistic modeling will give us a sense of which contributes more. We should treat ipsi-regions and contra-regions separately in the probabilistic sense, which would then give us the ability to compare how they look (lots of plots). 
+\section{Adaptive control between $\epsilon$ Greedy and Softmax}
+\subsection{Learning the $Q$ function by on and off policy methods}
+Value functions are learned by sampling observations of the interactions between the agent and its environment. For this, the branch of temporal difference learing offers two commonly used alogrithm which are named Sarsa for on-policy control:
+\begin{equation}
+\Delta_{\text{Sarsa}} = [r_{t+1} + \gamma Q(s_{t+1}, a_{t+1}) - Q(s_t,a_t]
+\end{equation}
+\begin{equation}
+Q(s_t,a_t) = Q(s_t, a_t) + \alpha \Delta_\text{Sarsa}
+\end{equation}
+and Q learning for off policy control: 
+\begin{equation}
+b^* = {\rm argmax}_{b\in {\cal A}(s_{t+1})}Q(s_{t+1}, b)
+\end{equation}
+\begin{equation}
+\Delta_{\text{Qlearning}} = [r_{t+1}+\gamma Q(s_{t+1}, b^*) - Q(s_t,a_t)]
+\end{equation}
+\begin{equation}
+Q(s_t,a_t = Q(s_t, a_t) + \alpha \Delta_{\text{Qlearning}}
+\end{equation}
+$\alpha$ is a stepsize parameter. The only difference in two algorithms is the inclusion of successor state information used for the evaluation of action $a_t$ taken in state $s_t$ while learning the value function. 
+\subsection{VDBE-Softmax}
+One way we can fix the issue with VDBE is to do a softmax step instead of sampling uniformly for the explore. This is as follows: 
+\begin{equation}
+\pi(s) = \begin{cases}
+\text{Softmax: }\dfrac{e^{Q(s,a)/\tau}}{\sum_be^{Q(s,b)/\tau}} & \zeta < \epsilon \\
+{\rm argmax}_{a\in {\cal A}(s)}Q(s,a) & \zeta \geq \epsilon
+\end{cases}
+\end{equation}
+
+This adapts the state dependent exploration rate according to VDBE but selects random actions according to Softmax in the case of exploration. 
+
+\section{Creating a probability distribution over the possible $q$ value and sampling that}
+
+\section{Apply the Softmax at each step}
+
+\section{Binary stochastic switching between greedy behavior and probabilistic sampling}
+
+\section{Binary stochastic switching between greedy behavior and softmax}
+
+\section{Adaptive Exploration using stochastic neurons}
+
+
+\section{Meta learning of exporation and exploitation parameters}
+
+\section{Gradient Algorithms for Exploration/Exploitation Trade-offs}
+
+\section{Chunk based exploration/exploitation???}
+
+
+
+
+
 \end{document}
