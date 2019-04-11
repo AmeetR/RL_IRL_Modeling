@@ -163,9 +163,47 @@ This adapts the state dependent exploration rate according to VDBE but selects r
 \section{Binary stochastic switching between greedy behavior and softmax}
 
 \section{Adaptive Exploration using stochastic neurons}
+\emph{THIS NAME IS A MISNOMER -- I STRONGLY DISAGREE WITH THIS}\\
 
+Finding a near optimal exploration parameter by trail and error can be a very time consuming task and it si desired to have algorithms adapt this parameters based on current operating conditions. The proposed idea is adapting the parameter $a_e$ of an action selection policy $\pi(a_e,\cdots)$ towards improving the future outcome of $\pi$ with regard to a performance meausre $\rho$. For maximizing $\rho$ in the future, we use Williams' REINFORCE with multiparameter distributions algorithm using a stochastic neuron model. The input to such neuron is a weighted parameter vector $\theta$ from which the neuron determines an adaptable stochastic scalar as its output. In example, if the policy is an epsilon greedy strategy, then $a_e$ is $\epsilon$. \\
 
+If we assume one starting state, the exploration parameter $a_e$ is drawn at the beginning of an episode from a Gaussian, that is: $a_e\sim {\cal N}(\mu, \sigma)$ with the following density function: 
+\begin{equation}
+g(a_e, \mu, \sigma) = \dfrac{1}{\sigma\sqrt{2\pi}}e^{-(a_e-\mu)^2/2\sigma^2}
+\end{equation}
+Let $\theta$ denote the vector of adaptable parameters consisting of
+\begin{equation}
+\theta = {\mu \choose \sigma}
+\end{equation}
+
+At the end of episode $i$, the components of $\theta$ are adapted towards the gradient with regard to the outcome $\rho$ of the current episode 
+\begin{equation}
+\theta_{i+1} \approx \theta_i +\alpha \Delta_\theta \rho
+\end{equation}
+For improving the future performance of $\pi(a_e, \cdots)$, the policies outcome is measured as the cumulative rewaqrd in the current episode. 
+\begin{equation}
+\rho = E\{r_1+r_2 + \cdots r_T|\pi (a_e, \cdot, \cdot)\}
+\end{equation}
+The characteristic eligibility of each component of $\theta$ is estimated by
+\begin{equation}
+\dfrac{\partial \ln g(a_e, \mu, \sigma)}{\partial \mu} = \dfrac{a_e-\mu}{\sigma^2}
+\end{equation}
+\begin{equation}
+\dfrac{\partial \ln g(a_e, \mu, \sigma)}{\partial \sigma} = \dfrac{(a_e-\mu)^2-\sigma^2}{\sigma^3}
+\end{equation}
+A reasonable algorithm for adapting $\mu$ and $\sigma$ has the following form:
+\begin{equation}
+\Delta \mu = \alpha_R(\rho - \overline{\rho})\dfrac{a_e-\mu}{\sigma^2}
+\end{equation}
+\begin{equation}
+\Delta \sigma = \alpha_R(\rho - \overline{\rho})\dfrac{(a_e-\mu)^2-\sigma^2}{\sigma^3}
+\end{equation}
+The learnign rate has to be chosen appropriately, as a small positive constant: $\alpha_R = \alpha\sigma^2$. The baseline $\overline{p}$ is adapted by a simple reinforcemnt comparison scheme: $\overline{\rho} = \overline{\rho} +\alpha(\rho - \overline{\rho})$. The standard deviation effecrtively constrols exploration in teh space of $\alpha_e$. Importantly, a proper functioning of the proposed algorithm depends on some requirements. In order to limit the search of reasonable parameter, the exploration parameter, mean and standard deviation must be bounded for obtaining reasonable performance. Furthermore, fi the learning problem consists of mroe than one starting state all parameters must be associated to each occuring starting state. \\
+
+\emph{Look at meta-learning of exploration and exploitation parameters with replacing eligibility traces by Tokic and look at page $4$ for the algorithm.}
 \section{Meta learning of exporation and exploitation parameters}
+A drawback of epsilon greedy and softmax is the optimism in the face of uncertainty. For this, it was proposed VDBE with Sofmax, which controls exploration and exploitation in a meta learning fashion. Look above. The general idea of this is that high fluctuations of the action value function should lead to a high degree of exploration because the observation is insufficiently approximated by the prediction. Ont he other hand, when the prediction about future reward siwell approximated, so far learned knowledge should be exploited. In this sense, the corresponding exploration rate in state $s$ is updated after each value function backup 
+
 
 \section{Gradient Algorithms for Exploration/Exploitation Trade-offs}
 
