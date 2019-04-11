@@ -198,15 +198,33 @@ A reasonable algorithm for adapting $\mu$ and $\sigma$ has the following form:
 \begin{equation}
 \Delta \sigma = \alpha_R(\rho - \overline{\rho})\dfrac{(a_e-\mu)^2-\sigma^2}{\sigma^3}
 \end{equation}
-The learnign rate has to be chosen appropriately, as a small positive constant: $\alpha_R = \alpha\sigma^2$. The baseline $\overline{p}$ is adapted by a simple reinforcemnt comparison scheme: $\overline{\rho} = \overline{\rho} +\alpha(\rho - \overline{\rho})$. The standard deviation effecrtively constrols exploration in teh space of $\alpha_e$. Importantly, a proper functioning of the proposed algorithm depends on some requirements. In order to limit the search of reasonable parameter, the exploration parameter, mean and standard deviation must be bounded for obtaining reasonable performance. Furthermore, fi the learning problem consists of mroe than one starting state all parameters must be associated to each occuring starting state. \\
+The learnign rate has to be chosen appropriately, as a small positive constant: $\alpha_tR = \alpha\sigma^2$. The baseline $\overline{p}$ is adapted by a simple reinforcemnt comparison scheme: $\overline{\rho} = \overline{\rho} +\alpha(\rho - \overline{\rho})$. The standard deviation effecrtively constrols exploration in teh space of $\alpha_e$. Importantly, a proper functioning of the proposed algorithm depends on some requirements. In order to limit the search of reasonable parameter, the exploration parameter, mean and standard deviation must be bounded for obtaining reasonable performance. Furthermore, if the learning problem consists of mroe than one starting state all parameters must be associated to each occuring starting state. \\
 
 \emph{Look at meta-learning of exploration and exploitation parameters with replacing eligibility traces by Tokic and look at page $4$ for the algorithm.}
 \section{Meta learning of exporation and exploitation parameters}
-A drawback of epsilon greedy and softmax is the optimism in the face of uncertainty. For this, it was proposed VDBE with Sofmax, which controls exploration and exploitation in a meta learning fashion. Look above. The general idea of this is that high fluctuations of the action value function should lead to a high degree of exploration because the observation is insufficiently approximated by the prediction. Ont he other hand, when the prediction about future reward siwell approximated, so far learned knowledge should be exploited. In this sense, the corresponding exploration rate in state $s$ is updated after each value function backup 
+A drawback of epsilon greedy and softmax is the optimism in the face of uncertainty. For this, it was proposed VDBE with Sofmax, which controls exploration and exploitation in a meta learning fashion. Look above. The general idea of this is that high fluctuations of the action value function should lead to a high degree of exploration because the observation is insufficiently approximated by the prediction. Ont he other hand, when the prediction about future reward siwell approximated, so far learned knowledge should be exploited. In this sense, the corresponding exploration rate in state $s$ is updated after each value function backup. I'm pretty sure this paper is just a survey of different methods, with details and applications to a robot -- useful but not a new algorithm
 
 
 \section{Gradient Algorithms for Exploration/Exploitation Trade-offs}
+\subsection{MBE}
 
+THis should have been much earlier in this thing but whatever. This is a combination wof Softmax with $\epsilon$ greedy into the max boltzmann exploration rule, which selects explroation actions according to softmax instead of being equally distributed. 
+\subsection{Global Episodic Control}
+The REC algorithm determines at each time step a continuous valued action from a multiparameter distribution, representing the exploration parameter $a_e$. For this purpose, we use a normal distribution with parameter $\mu$ and $\sigma$ which are given to the neuron as inputs. At the beginning of eacvh learing episode, the exploration parameter, beign valid over the whole episode is determined from the distribution: $a_e\sim {\cal N}(\mu, \sigma)$. The rest of this is just recap from the last one, so I'm skipping it. 
+\subsection{Local Step-Wise Control}
+The results from the previous section can be extended for obtaining a local variant, aiming at producing exploratory behavior only in states with improvement potential. In general, all utilized parameters become local parameters associated to each state. The mean and standard deviation are readapted after evaluation action $a$ performed in state $s$ by Q learning or Sarsa. In prior to an action selection in state $s$, an expoloration parameter $a_e$ is determined based on $\mu(s)$ and $\sigma(s)$. As before, $a_e\sim {\cal N}(\mu(s), \sigma(s))$. For evaluating the utility of $a_e$, the estimated utility of the actual taken actions $Q_{t+1}(s_t, a_t)$ is considered. Let $\rho = Q_{t+1}(s_t, a_t)$. THe following equaiton now readapt the distribution parameters from state $s_t$ based on the policies outcome using its current parameter $a_e$. 
+\begin{equation}
+\Delta\mu(s_t) = \alpha_R (\rho - \overline{\rho}(s_t)) \dfrac{a_e -\mu(s_t)}{\sigma(s_t)^2}
+\end{equation} 
+\begin{equation}
+\Delta \sigma (s_t) = \alpha_R (\rho - \overline{\rho}(s_t))\dfrac{(a_e-\mu(s_t))^2-\simga(s_t)^2}{\sigma(s_t)^3}
+\end{equation}
+The baseline $\overline{\rho}$ is adapted in the same fashion as above: 
+\begin{equation}
+\overline{\rho} = \overline{\rho}(s_t) + \alpha(\rho - \overline{\rho}(s_t))
+\end{equation}
+
+These presented policies are evaluated using off-policy Q-learning and on-policy Sarsa learning. 
 \section{Chunk based exploration/exploitation???}
 
 
