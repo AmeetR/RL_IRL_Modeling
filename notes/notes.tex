@@ -1,0 +1,234 @@
+\documentclass[10.5pt]{article}
+\usepackage{amsmath,textcomp,amssymb,geometry,graphicx,enumerate}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{svg}
+\def\dx{{\rm dx}}
+\def\tr{{\rm tr}}
+\def\spa{{\rm span}}
+\def\T{{\mathbb{T}}}
+\def\H{{\mathbb{H}}}
+\def\K{{\mathbb{K}}}
+\def\L{{\mathbb{L}}}
+\def\M{{\mathbb{M}}}
+\def\N{{\mathbb{N}}}
+\def\P{{\mathbb{P}}}
+\def\Q{{\mathbb{Q}}}
+\def\R{{\mathbb{R}}}
+\def\C{{\mathbb{C}}}
+\def\Z{{\mathbb{Z}}}
+\newcommand{\interior}[1]{%
+  {\kern0pt#1}^{\mathrm{o}}%
+}
+\newcommand{\closure}{\overline}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=R,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\def\Name{Ameet Rahane}  % Your name
+\def\Session{Spring 2019}
+
+
+\title{ASD/MF Project Notes}
+
+\author{Ameet Rahane}
+
+
+
+\newenvironment{qparts}{\begin{enumerate}[{(}a{)}]}{\end{enumerate}}
+\def\endproofmark{$\Box$}
+\def\bigO{\mathcal{O}}
+\newenvironment{proof}{\par{\bf Proof}:}{\endproofmark\smallskip}
+
+\textheight=9in
+\textwidth=6.5in
+\topmargin=-.75in
+\oddsidemargin=0.25in
+\evensidemargin=0.25in
+
+
+\begin{document}
+\title{Types of Reinforcement learning algorithm -- adaptive $\epsilon$ methods}
+\author{Ameet Rahane}
+\maketitle
+\date{}
+
+
+\section{Preface}
+
+
+All of the following methods are ways I'm considering changing explore/exploit behavior within models in order to fit it to a biological agent. Something of notes is that most of these models are built to optimize for reward gained. This is not necessarily our goal. We want to find the best fit to a mouse. 
+
+
+\section{$\epsilon$ Greedy}
+
+With this method, the amount of exploration is globally controlled by a parameter $\epsilon\in [0,1]$ that denotes the probability of action selection. You choose actions based on the following equation: 
+\begin{equation}
+a_t = \begin{cases}
+a_t^* & p = 1-\epsilon\\
+\text{random} & p = \epsilon
+\end{cases}
+\end{equation}
+
+This basically stochastically chooses between two choices -- pure randomness or pure maximization (this is probably a bit idealistic and won't fit mice that well).
+
+\section{Softmax}
+\begin{itemize}
+  \item Bias exploration towards promising actions
+  \item Softmax action selection methods grade action probabilities by estimated values
+  \item Most Common is Boltzmann Distribution: 
+  \begin{equation}
+\pi(a|s) = \dfrac{e^{\dfrac{Q(s,a)}{\tau}}}{e^{\sum_{a'\in A}\dfrac{Q(s,a')}{\tau}}}
+  \end{equation}
+  \item Here $\tau$ is a temperature constant. That is $\tau \to \infty$ implies that $P=\dfrac{1}{|A|}$ and $T\to 0$ implies that it's greedy
+\end{itemize}
+
+\section{Value Difference Based Exploration}
+This method extends $\epsilon-$greedy by adapting a state dependent exploration probability $\epsilon(s)$ instead of the classical hand tuning. The key idea is to consider the TD-error observed from value-function backups as a measure of the agent's uncertainty about the environment which directly affects the exploration probability. \\
+
+Consider the RL framework where an agent interacts with a Markovian decision process. At each time step $t\in \N$, the agent is in a sertain state $s_t\in S$. After the selection of the action,$ a_t\in A(s_t)$, the agent receives a reward signal from the environment $r_{t+1} \in \R$ and is passed into a successor state. The decision which action $a$ is chosen in a certain state is characterized by a policy $\pi(s) = a$, which could also be stochastic $\pi(a|s) = p(a_t=a|s_t=s$. A policy that maximizes the cumulative reward is denoted as $\pi^*$. \\
+
+A state action value denotes the expected cumulative reward $R_t$ for following $\pi$ by starting in state $s$ and selection action $a$: 
+\begin{equation}
+Q^\pi(s,a) = E_\pi \{R_t|s_t=s, a_t=a\} = E_\pi \{\sum_{k=0}^\infty \gamma^kr_{t+k+1}|s_t=s,a_t=a\}
+\end{equation} 
+$\gamma$ is a discount factor in $(0,1]$ for episodic learning tasks and $0<\gamma< 1$ for continuous learning tasks. \\
+
+The basic idea of VDBE is to extend $\epsilon$ greedy by controlling a state dependent explorations probability $\epsilon(s)$ in dependence of the value function error instead of manual tuning. The following equatins adapt such desired behavior according to a softmax Boltzmann distribution of the value fuction estimates. This is performed after eadch learning step by: 
+\begin{equation}
+f(s,a,\sigma) = \dfrac{1-e^\frac{-|a\text{TD-Error}|}{\sigma}}{1+e^\frac{-|a\text{TD-Error}|}{\sigma}}
+\end{equation}
+Then, we update $\epsilon$ as follows: 
+\begin{equation}
+\epsilon_{t+1}(s) =\delta f(s_t, a_t, \sigma) + (1-\delta) \epsilon_t(s)
+\end{equation}
+
+$\sigma$  is a positive constant called inverse sensitivity and $\delta \in [0,1)$, a parameter determining the influence of the selection action on the exploration rate. An obvious setting for $\delta$ may be the inverse of the number of actions in the current state: $\delta = \dfrac{1}{|{\cal A}(s)|}$. Low inverse sensitivities cause full exploration even at small value changes. On the other hand, shigh inverse sensitivities cause a high level of exploration only at large value changes. In the limit, the exploration rate converges to zero as the Q-function converges, which results in pure greedy action selection. One drawback is the exploration actions are chosen uniformly distributed among all possible actions in the current state. 
+
+\section{Adaptive control between $\epsilon$ Greedy and Softmax}
+\subsection{Learning the $Q$ function by on and off policy methods}
+Value functions are learned by sampling observations of the interactions between the agent and its environment. For this, the branch of temporal difference learing offers two commonly used alogrithm which are named Sarsa for on-policy control:
+\begin{equation}
+\Delta_{\text{Sarsa}} = [r_{t+1} + \gamma Q(s_{t+1}, a_{t+1}) - Q(s_t,a_t]
+\end{equation}
+\begin{equation}
+Q(s_t,a_t) = Q(s_t, a_t) + \alpha \Delta_\text{Sarsa}
+\end{equation}
+and Q learning for off policy control: 
+\begin{equation}
+b^* = {\rm argmax}_{b\in {\cal A}(s_{t+1})}Q(s_{t+1}, b)
+\end{equation}
+\begin{equation}
+\Delta_{\text{Qlearning}} = [r_{t+1}+\gamma Q(s_{t+1}, b^*) - Q(s_t,a_t)]
+\end{equation}
+\begin{equation}
+Q(s_t,a_t = Q(s_t, a_t) + \alpha \Delta_{\text{Qlearning}}
+\end{equation}
+$\alpha$ is a stepsize parameter. The only difference in two algorithms is the inclusion of successor state information used for the evaluation of action $a_t$ taken in state $s_t$ while learning the value function. 
+\subsection{VDBE-Softmax}
+One way we can fix the issue with VDBE is to do a softmax step instead of sampling uniformly for the explore. This is as follows: 
+\begin{equation}
+\pi(s) = \begin{cases}
+\text{Softmax: }\dfrac{e^{Q(s,a)/\tau}}{\sum_be^{Q(s,b)/\tau}} & \zeta < \epsilon \\
+{\rm argmax}_{a\in {\cal A}(s)}Q(s,a) & \zeta \geq \epsilon
+\end{cases}
+\end{equation}
+
+This adapts the state dependent exploration rate according to VDBE but selects random actions according to Softmax in the case of exploration. 
+
+\section{Creating a probability distribution over the possible $q$ value and sampling that}
+
+\section{Apply the Softmax at each step}
+
+\section{Binary stochastic switching between greedy behavior and probabilistic sampling}
+
+\section{Binary stochastic switching between greedy behavior and softmax}
+
+\section{Adaptive Exploration using stochastic neurons}
+\emph{THIS NAME IS A MISNOMER -- I STRONGLY DISAGREE WITH THIS}\\
+
+Finding a near optimal exploration parameter by trail and error can be a very time consuming task and it si desired to have algorithms adapt this parameters based on current operating conditions. The proposed idea is adapting the parameter $a_e$ of an action selection policy $\pi(a_e,\cdots)$ towards improving the future outcome of $\pi$ with regard to a performance meausre $\rho$. For maximizing $\rho$ in the future, we use Williams' REINFORCE with multiparameter distributions algorithm using a stochastic neuron model. The input to such neuron is a weighted parameter vector $\theta$ from which the neuron determines an adaptable stochastic scalar as its output. In example, if the policy is an epsilon greedy strategy, then $a_e$ is $\epsilon$. \\
+
+If we assume one starting state, the exploration parameter $a_e$ is drawn at the beginning of an episode from a Gaussian, that is: $a_e\sim {\cal N}(\mu, \sigma)$ with the following density function: 
+\begin{equation}
+g(a_e, \mu, \sigma) = \dfrac{1}{\sigma\sqrt{2\pi}}e^{-(a_e-\mu)^2/2\sigma^2}
+\end{equation}
+Let $\theta$ denote the vector of adaptable parameters consisting of
+\begin{equation}
+\theta = {\mu \choose \sigma}
+\end{equation}
+
+At the end of episode $i$, the components of $\theta$ are adapted towards the gradient with regard to the outcome $\rho$ of the current episode 
+\begin{equation}
+\theta_{i+1} \approx \theta_i +\alpha \Delta_\theta \rho
+\end{equation}
+For improving the future performance of $\pi(a_e, \cdots)$, the policies outcome is measured as the cumulative rewaqrd in the current episode. 
+\begin{equation}
+\rho = E\{r_1+r_2 + \cdots r_T|\pi (a_e, \cdot, \cdot)\}
+\end{equation}
+The characteristic eligibility of each component of $\theta$ is estimated by
+\begin{equation}
+\dfrac{\partial \ln g(a_e, \mu, \sigma)}{\partial \mu} = \dfrac{a_e-\mu}{\sigma^2}
+\end{equation}
+\begin{equation}
+\dfrac{\partial \ln g(a_e, \mu, \sigma)}{\partial \sigma} = \dfrac{(a_e-\mu)^2-\sigma^2}{\sigma^3}
+\end{equation}
+A reasonable algorithm for adapting $\mu$ and $\sigma$ has the following form:
+\begin{equation}
+\Delta \mu = \alpha_R(\rho - \overline{\rho})\dfrac{a_e-\mu}{\sigma^2}
+\end{equation}
+\begin{equation}
+\Delta \sigma = \alpha_R(\rho - \overline{\rho})\dfrac{(a_e-\mu)^2-\sigma^2}{\sigma^3}
+\end{equation}
+The learnign rate has to be chosen appropriately, as a small positive constant: $\alpha_tR = \alpha\sigma^2$. The baseline $\overline{p}$ is adapted by a simple reinforcemnt comparison scheme: $\overline{\rho} = \overline{\rho} +\alpha(\rho - \overline{\rho})$. The standard deviation effecrtively constrols exploration in teh space of $\alpha_e$. Importantly, a proper functioning of the proposed algorithm depends on some requirements. In order to limit the search of reasonable parameter, the exploration parameter, mean and standard deviation must be bounded for obtaining reasonable performance. Furthermore, if the learning problem consists of mroe than one starting state all parameters must be associated to each occuring starting state. \\
+
+\emph{Look at meta-learning of exploration and exploitation parameters with replacing eligibility traces by Tokic and look at page $4$ for the algorithm.}
+\section{Meta learning of exporation and exploitation parameters}
+A drawback of epsilon greedy and softmax is the optimism in the face of uncertainty. For this, it was proposed VDBE with Sofmax, which controls exploration and exploitation in a meta learning fashion. Look above. The general idea of this is that high fluctuations of the action value function should lead to a high degree of exploration because the observation is insufficiently approximated by the prediction. Ont he other hand, when the prediction about future reward siwell approximated, so far learned knowledge should be exploited. In this sense, the corresponding exploration rate in state $s$ is updated after each value function backup. I'm pretty sure this paper is just a survey of different methods, with details and applications to a robot -- useful but not a new algorithm
+
+
+\section{Gradient Algorithms for Exploration/Exploitation Trade-offs}
+\subsection{MBE}
+
+THis should have been much earlier in this thing but whatever. This is a combination wof Softmax with $\epsilon$ greedy into the max boltzmann exploration rule, which selects explroation actions according to softmax instead of being equally distributed. 
+\subsection{Global Episodic Control}
+The REC algorithm determines at each time step a continuous valued action from a multiparameter distribution, representing the exploration parameter $a_e$. For this purpose, we use a normal distribution with parameter $\mu$ and $\sigma$ which are given to the neuron as inputs. At the beginning of eacvh learing episode, the exploration parameter, beign valid over the whole episode is determined from the distribution: $a_e\sim {\cal N}(\mu, \sigma)$. The rest of this is just recap from the last one, so I'm skipping it. 
+\subsection{Local Step-Wise Control}
+The results from the previous section can be extended for obtaining a local variant, aiming at producing exploratory behavior only in states with improvement potential. In general, all utilized parameters become local parameters associated to each state. The mean and standard deviation are readapted after evaluation action $a$ performed in state $s$ by Q learning or Sarsa. In prior to an action selection in state $s$, an expoloration parameter $a_e$ is determined based on $\mu(s)$ and $\sigma(s)$. As before, $a_e\sim {\cal N}(\mu(s), \sigma(s))$. For evaluating the utility of $a_e$, the estimated utility of the actual taken actions $Q_{t+1}(s_t, a_t)$ is considered. Let $\rho = Q_{t+1}(s_t, a_t)$. THe following equaiton now readapt the distribution parameters from state $s_t$ based on the policies outcome using its current parameter $a_e$. 
+\begin{equation}
+\Delta\mu(s_t) = \alpha_R (\rho - \overline{\rho}(s_t)) \dfrac{a_e -\mu(s_t)}{\sigma(s_t)^2}
+\end{equation} 
+\begin{equation}
+\Delta \sigma (s_t) = \alpha_R (\rho - \overline{\rho}(s_t))\dfrac{(a_e-\mu(s_t))^2-\sigma(s_t)^2}{\sigma(s_t)^3}
+\end{equation}
+The baseline $\overline{\rho}$ is adapted in the same fashion as above: 
+\begin{equation}
+\overline{\rho} = \overline{\rho}(s_t) + \alpha(\rho - \overline{\rho}(s_t))
+\end{equation}
+
+These presented policies are evaluated using off-policy Q-learning and on-policy Sarsa learning. 
+\section{Chunk based exploration/exploitation???}
+
+
+
+
+
+\end{document}
