@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-from Typing import Dict, Tuple
+from typing import *
 
 
 
