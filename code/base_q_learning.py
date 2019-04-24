@@ -13,9 +13,9 @@ class Parameters:
     discount_factor: float = 0 # discount rate
     exploration_prob: float = 0 #epsilon
     def __init__(self):
-        self.learning_rate = lambda: random.uniform(0, 1)
+        self.learning_rate = lambda x: random.uniform(0, 1)
         self.discount_faction = random.uniform(0, 1)
-        self.discount_faction = random.uniform(0, 1)
+        self.exploration_prob = random.uniform(0, 1)
     def set_params(self, learning_rate: float, discount_factor: float) -> None:
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
@@ -45,8 +45,11 @@ class q_learning_agent:
         self.initialize_q_params()
         
     def initialize_q_params(self) -> None:
-        for key in self.task.transitions:
-            self.q_values[key] = 0
+        #for key in self.task.transitions:
+        #    self.q_values[key] = 0
+        for state in self.task.states:
+            for actions in self.task.actions:
+                self.q_values[(state,actions)] = 0
                 
     def update_q_values(self, state, action, next_state, reward, iteration) -> None: 
         alpha = self.parameters.learning_rate(iteration)
@@ -59,6 +62,7 @@ class q_learning_agent:
         
                 
     def choose_action(self, state) -> str:
+
         legal_actions = self.task.get_legal_actions(state)
         num = random.uniform(0, 1)
         if num <= self.parameters.exploration_prob:
@@ -68,42 +72,22 @@ class q_learning_agent:
         return max(self.q_values, key= self.q_values.get)[1]
         
     def run_q_learning(self) -> list:
+        self.actions = []
         actions: List[str]  = []
         i: int = 0
-        while i <= self.iterations:
-            i += 1
+        while i < self.iterations:
+            
             action = self.choose_action(self.current_state)
             actions.append(action)
-            next_state, reward = task.make_action(self.current_state, action)
+            next_state, reward = self.task.make_action(self.current_state, action, i)
             self.update_q_values(self.current_state, action, next_state, reward, iteration = i)
-            print("The current state is: " + self.current_state)
-            print("The given action is: " + action)
-            print("The q values are as follows:" +str(self.q_values))
-            print("Reward for next state is: " + str(reward))
-            print("\n\n\n")
+            #print("The current state is: " + str(self.current_state))
+            #print("The given action is: " + str(action))
+            #print("The q values are as follows:" +str(self.q_values))
+            #print("Reward for next state is: " + str(reward))
+            #print("\n\n\n")
             self.current_state = next_state
-        
+            self.actions.append(action)
+            #print(i)
+            i+=1
         return actions
-
-
-
-
-if __name__ == '__main__':
-	states = ["center"]
-	actions = {"center": ["left", "right", "nothing"]}
-	rewards = {("center", "left"): lambda : np.random.choice([10, -1], p = [.8, .2]), ("center", "right"): lambda : np.random.choice([10, -1], p = [.2, .8]), ("center", "nothing"): -1}
-	transitions = {("center", "left"): "center", ("center", "right"): "center", ("center", "nothing"): "center"}
-	task = Task(states, rewards, transitions)
-
-	qlearn = q_learning_agent(task = task, initial_state= "center", iterations = 10000 )
-	qlearn.parameters.exploration_prob = .7
-	qlearn.parameters.set_learning_rate(lambda x: 1/(x+1))
-	qlearn.run_q_learning()
-
-
-
-
-
-
-
-
