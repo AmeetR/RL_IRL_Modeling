@@ -3,7 +3,7 @@ from typing import *
 import random
 import matplotlib.pyplot as plt
 from util import *
-
+from base_q_learning import *
 
 class Parameters:
     """
@@ -35,14 +35,18 @@ class Parameters:
         self.__init__()
 
 
-
-class q_learning_agent:
+class Updating_Neuron:
     q_values: Dict[Tuple[str, str], float] = {}
+    epsilon: Dict[str, float] = {}
     task: Task = None
     current_state: str = None
     all_q_vals: List[Dict] = []
     state_list: List[str] = []
     action_probs = []
+    outcome: float = 0 # Cumulative Reward in each trial
+    baseline: float = 0 # Approximate cumulative reward in next trial
+    mu: float = 0
+    sigma: float = 0
     def __init__(self, iterations: int = 1000, task: Task = None, initial_state: str = None, \
                  parameters: Parameters = Parameters()) -> None:
         self.iterations = iterations
@@ -50,6 +54,8 @@ class q_learning_agent:
         self.task = task
         self.current_state =initial_state 
         self.initialize_q_params()
+        self.mu = .5
+        self.sigma = .25
         
     def initialize_q_params(self) -> None:
         #for key in self.task.transitions:
@@ -60,6 +66,8 @@ class q_learning_agent:
                 
         self.all_q_vals = []
         self.action_probs = []
+        
+        
                 
     def update_q_values(self, state, action, next_state, reward, iteration) -> None: 
         alpha = self.parameters.learning_rate(iteration)
@@ -71,10 +79,25 @@ class q_learning_agent:
         self.q_values[(state, action)] = new_q
         
         
-    def generate_action_probs(self) -> None: 
+    def update_param(self, epsilon, rewards):
+        mu = self.mu
+        sigma = self.sigma
+        
+        alpha = self.parameters.learning_rate(0)*(sigma**2)
+        delta_mu = alpha * (self.baseline - rewards) * ((epsilon - mu)/(sigma**2)) 
+        delta_sigma = alpha * (self.baseline - rewards) * (((epsilon - mu)**2-sigma**2)/(sigma**3))
+        #print(delta_mu, delta_sigma)
+        self.baseline = rewards + self.parameters.learning_rate(0)*(self.baseline - rewards)
+        self.mu = min(self.mu + self.parameters.learning_rate(0) * delta_mu * rewards, 1e16)
+        self.sigma = max(self.sigma + self.parameters.learning_rate(0) * delta_sigma * rewards, 0) + .0025
+
+        
+        
+        
+    def generate_action_probs(self, epsilon) -> None: 
         action_prob_dict: Dict[Tuple[str,str], float]
         action_prob_dict = {}
-        epsilon = self.parameters.exploration_prob
+        
         for state in self.task.states: 
             curr_state_qvals = {key:value for (key,value) in self.q_values.items() if state in key}
             max_action = max(curr_state_qvals, key = curr_state_qvals.get)
@@ -86,11 +109,11 @@ class q_learning_agent:
 
         self.action_probs.append(action_prob_dict)
             
-    def choose_action(self, state) -> str:
+    def choose_action(self, state, epsilon) -> str:
 
         legal_actions = self.task.get_legal_actions(state)
         num = random.uniform(0, 1)
-        if num <= self.parameters.exploration_prob:
+        if num <= epsilon:
             return random.choice(legal_actions)
         
         state_q_values =  {key:value for (key,value) in self.q_values.items() if state in key}
@@ -101,10 +124,12 @@ class q_learning_agent:
         actions: List[str]  = []
         i: int = 0
         while i < self.iterations:
+            epsilon = np.random.normal(self.mu, self.sigma) % 1
             
-            action = self.choose_action(self.current_state)
+            action = self.choose_action(self.current_state, epsilon)
             actions.append(action)
             next_state, reward = self.task.make_action(self.current_state, action, i)
+            self.update_param(epsilon, reward)
             self.update_q_values(self.current_state, action, next_state, reward, iteration = i)
             self.all_q_vals.append(self.q_values)
             #print("The current state is: " + str(self.current_state))
@@ -112,49 +137,9 @@ class q_learning_agent:
             #print("The q values are as follows:" +str(self.q_values))
             #print("Reward for next state is: " + str(reward))
             #print("\n\n\n")
-            self.generate_action_probs()
+            self.generate_action_probs(epsilon)
             self.current_state = next_state
             self.actions.append(action)
             #print(i)
             i+=1
         return actions
-    def AIC(self, likelihood):
-        num_parameters = 3
-        return 2*num_parameters - 2*likelihood
-    
-    
-    
-    
-class softmax_agent(q_learning_agent):
-    def choose_action(self, state) -> str: 
-        legal_actions = self.task.get_legal_actions(state)
-        qvals = {key:value for (key,value) in self.q_values.items() if state in key}
-        softmax_probs = self.softmax(qvals)
-
-        prob_list = []
-        key_list = []
-        for key in qvals:
-            prob_list.append(softmax_probs[key])
-            key_list.append(key[1])
-        #for i in range(len(prob_list)): 
-        #    if np.isnan(prob_list[i]):
-        #        prob_list[i] = 1
-        self.action_probs.append({key: np.log(value) for (key, value) in softmax_probs.items()})
-        return np.random.choice(key_list, p =prob_list)
-            
-    def softmax(self, qvals):
-        # USE Stable softmax instead as it protects against numerical instability
-        beta_val = self.parameters.tau
-        max_q = max(qvals.values())
-        sum_qs= sum([np.exp((qvals[x] - max_q)*beta_val) for x in qvals])
-
-        
-        softmax_dict = {}
-        for key in qvals:
-            curr_ex = np.exp((qvals[key] - max_q)*beta_val)
-            softmax_dict[key] = curr_ex/sum_qs
-
-            #print(softmax_dict)
-        #print("Probability", softmax_dict)
-        return softmax_dict
-    

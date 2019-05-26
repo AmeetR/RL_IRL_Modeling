@@ -36,7 +36,7 @@ class Task:
     """
     states: List[str] = []
     rewards: Dict[Tuple[str, str], Callable] = {} #mapping from state, action tuple to a function 
-    transitions: Dict[Tuple[str, str], str] = {} # This is a mapping from state,action tuple to the new state
+    transitions: Dict[Tuple[str, str], Callable] = {} # This is a mapping from state,action tuple to the new state
         
     def __init__(self, states: List[str], rewards: Dict[Tuple[str, str], Callable], transitions: Dict[Tuple[str, str], str]) -> None:
         self.states = states
