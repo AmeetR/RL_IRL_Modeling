@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><GridWorldProperty>
-	<showGUI>1</showGUI>
-	<sleepTime>200</sleepTime>
-	<loadFilePath>data/gridworld/walkingrobot-5x5.gridworld</loadFilePath>
-	<lastFilePath>/home/tokicm/workspace/amser-tb-sourceforge/data/gridworld/walkingrobot-5x5-realworldData.gridworld</lastFilePath>
-	<activeColor b="255" g="51" r="51"/>
-</GridWorldProperty>
