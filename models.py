@@ -17,8 +17,6 @@ class AdaptiveBetaQLearning(BoltzmannQLearning):
         temp = np.exp(-self.alpha_value * np.abs(self.TDE) / self.sigma)
         return 2*temp / (1-temp)
 
-
-
     def update_q(self, state_key, action_key, reward_value, next_max_q):
         '''
         Update Q-Value.
@@ -34,7 +32,26 @@ class AdaptiveBetaQLearning(BoltzmannQLearning):
 
 
 class AdaptiveEpsilonGreedy(GreedyQLearning):
-    pass
+
+    def update_q(self, state_key, action_key, reward_value, next_max_q):
+        '''
+        Update Q-Value.
+        Args:
+            state_key:              The key of state.
+            action_key:             The key of action.
+            reward_value:           R-Value(Reward).
+            next_max_q:             Maximum Q-Value.
+        '''
+        # Now Q-Value.
+        self.TDE = self.gamma_value * next_max_q - self.extract_q_df(state_key, action_key)
+        super(BoltzmannQLearning).update_q(state_key, action_key, reward_value, next_max_q)
+
+    def get_epsilon_greedy_rate(self):
+        ''' getter '''
+        temp = np.exp(-self.alpha_value * np.abs(self.TDE) / self.sigma)
+        return (1-temp) / (1+ temp)
+
+
 
 
 
