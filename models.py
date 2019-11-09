@@ -1,5 +1,6 @@
 from pyqlearning.qlearning.boltzmann_q_learning import BoltzmannQLearning
 from pyqlearning.qlearning.greedy_q_learning import GreedyQLearning
+import unittest
 import numpy as np
 
 class AdaptiveBetaQLearning(BoltzmannQLearning):
@@ -39,3 +40,13 @@ class AdaptiveEpsilonGreedy(GreedyQLearning):
 
 
 
+
+class sigmoid_tests(unittest.TestCase):
+    def test_trivial(self):
+        test = AdaptiveBetaQLearning()
+        self.assertEqual(test.AdaptiveBetaQLearning, 0)
+
+
+
+if __name__ == '__main__':
+    unittest.main()
