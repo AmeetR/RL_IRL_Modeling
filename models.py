@@ -2,6 +2,7 @@ from pyqlearning.qlearning.boltzmann_q_learning import BoltzmannQLearning
 from pyqlearning.qlearning.greedy_q_learning import GreedyQLearning
 import numpy as np
 
+
 class AdaptiveBetaQLearning(BoltzmannQLearning):
 
     def __init__(self):
