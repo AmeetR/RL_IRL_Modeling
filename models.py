@@ -55,10 +55,6 @@ class AdaptiveEpsilonGreedy(GreedyQLearning):
 
 
 
-
-
-
-
 class sigmoid_tests(unittest.TestCase):
     def test_trivial(self):
         test = AdaptiveBetaQLearning()
