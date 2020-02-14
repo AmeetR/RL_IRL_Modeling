@@ -317,11 +317,11 @@ if __name__ == "__main__":
         img_list.append(bg_img)
 
     img_list[0].save(
-        'img/DQN_agent_demo.gif',
+        f'img/GreedyQN_agent_demo_a_{alpha_value}_ga_{gamma_value}_gr_{greedy_rate}.gif',
         save_all=True,
         append_images=img_list[1:], 
-        optimize=False, 
-        duration=40, 
+        optimize=False,
+        duration=40,
         loop=0
     )
 
