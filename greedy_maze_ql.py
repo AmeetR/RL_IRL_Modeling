@@ -10,6 +10,7 @@ from PIL import ImageDraw
 import pandas as pd
 COLOR_MAP = {"S": 255, "@": 225, "#": 0, "end_point": 30}
 
+
 class MazeGreedyQLearning(GreedyQLearning):
     '''
     ε-greedy Q-Learning to solve Maze problem.
