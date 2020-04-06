@@ -1,4 +1,9 @@
+# images
+*.gif
+
+# systems
 .DS_Store
+.idea
 
 # MAT file
 *.mat
