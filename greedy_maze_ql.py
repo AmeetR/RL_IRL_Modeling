@@ -4,9 +4,7 @@ import numpy as np
 import copy
 from pyqlearning.qlearning.greedy_q_learning import GreedyQLearning
 import matplotlib.pyplot as plt
-from PIL import Image
-from PIL import ImageFont
-from PIL import ImageDraw
+from PIL import Image, ImageFont, ImageDraw
 import pandas as pd
 COLOR_MAP = {"S": 255, "@": 225, "#": 0, "end_point": 30}
 
@@ -319,7 +317,7 @@ if __name__ == "__main__":
     img_list[0].save(
         f'img/GreedyQN_agent_demo_a_{alpha_value}_ga_{gamma_value}_gr_{greedy_rate}.gif',
         save_all=True,
-        append_images=img_list[1:], 
+        append_images=img_list[1:],
         optimize=False,
         duration=40,
         loop=0
